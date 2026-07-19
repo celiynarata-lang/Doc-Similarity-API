@@ -109,7 +109,7 @@ async function checkSentenceOnline(
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-5",
+        model: "claude-sonnet-5",
         max_tokens: 1024,
         system:
           'You are a plagiarism-detection assistant with web search access. Search the web to check if this sentence already exists online. Respond with ONLY a JSON object: {"matched": boolean, "source_url": string|null, "source_title": string|null, "confidence": number 0-100, "note": string}',
