@@ -129,8 +129,9 @@ async function checkSentenceOnline(
     });
 
     if (!response.ok) {
+      const errorBody = await response.text();
       logger.error(
-        { status: response.status },
+        { status: response.status, body: errorBody },
         "Anthropic API returned non-ok status",
       );
       return {
