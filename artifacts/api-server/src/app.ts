@@ -25,9 +25,22 @@ app.use(
     },
   }),
 );
-app.use(cors());
+
+const frontendUrl = process.env.FRONTEND_URL;
+app.use(
+  cors({
+    origin: frontendUrl ? frontendUrl : true,
+    credentials: true,
+  }),
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Root health endpoint
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
 
 app.use("/api", router);
 

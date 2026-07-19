@@ -1,45 +1,74 @@
-# [Project name]
+# Layanan Cek Kemiripan Dokumen
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+API backend berbayar untuk layanan pengecekan kemiripan/plagiarisme dokumen, mengintegrasikan Midtrans payment gateway dan Anthropic AI web search.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/api-server run dev` — jalankan API server (port dari env PORT, default 3000)
+- `pnpm run typecheck` — typecheck seluruh workspace
+- `pnpm run build` — typecheck + build semua package
+- `pnpm --filter @workspace/api-spec run codegen` — regenerasi API hooks dari OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+
+## Required Environment Variables
+
+- `DATABASE_URL` — PostgreSQL connection string
+- `MIDTRANS_SERVER_KEY` — Midtrans server key
+- `MIDTRANS_CLIENT_KEY` — Midtrans client key
+- `MIDTRANS_IS_PRODUCTION` — "true" untuk production, "false" untuk sandbox
+- `ANTHROPIC_API_KEY` — Anthropic API key untuk web search plagiarism check
+- `PRICE_PER_SCAN` — harga per scan dalam Rupiah (default: 15000)
+- `FRONTEND_URL` — URL frontend untuk CORS (contoh: https://myapp.com)
+- `PORT` — port server (default: 3000)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
+- Payment: Midtrans Snap (`midtrans-client`)
+- AI: Anthropic API (claude-sonnet-4-5) dengan web_search tool
 - Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Build: esbuild (ESM bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/api-server/src/routes/payment.ts` — endpoint payment (create-transaction, notification, status)
+- `artifacts/api-server/src/routes/scan.ts` — endpoint scan kemiripan dokumen
+- `artifacts/api-server/src/lib/migrate.ts` — migration script (CREATE TABLE IF NOT EXISTS), dijalankan otomatis saat server start
+- `lib/db/src/schema/` — Drizzle schema untuk 3 tabel
+
+## API Endpoints
+
+| Method | Path | Deskripsi |
+|--------|------|-----------|
+| GET | /health | Health check |
+| GET | /api/healthz | Health check (legacy) |
+| POST | /api/payment/create-transaction | Buat transaksi Midtrans baru |
+| POST | /api/payment/notification | Webhook notifikasi Midtrans |
+| GET | /api/payment/status/:orderId | Cek status transaksi |
+| POST | /api/scan | Scan kemiripan dokumen |
+
+## Database Tables
+
+- `transactions` — menyimpan data transaksi pembayaran
+- `documents` — menyimpan dokumen yang di-scan (dipakai sebagai corpus lokal)
+- `scan_results` — menyimpan hasil scan per transaksi
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Migration dijalankan dengan raw SQL (`CREATE TABLE IF NOT EXISTS`) via pg Pool saat server startup — lebih simpel dari Drizzle push untuk deployment
+- Shingling 6-kata dengan metric containment (bukan Jaccard) karena lebih sensitif terhadap dokumen pendek
+- Anthropic web search dipanggil untuk maks 5 kalimat terpanjang (min 7 kata) untuk menghemat API cost
+- CORS dikonfigurasi dari `FRONTEND_URL` env var; jika tidak di-set, mengizinkan semua origin
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+_Populate as you build._
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Pastikan run `pnpm --filter @workspace/api-server run dev` (bukan root-level `pnpm dev`)
+- Migration otomatis dijalankan saat startup, tidak perlu manual SQL
+- Midtrans notification endpoint harus bisa diakses dari internet (perlu public URL)
+- Model Anthropic di scan.ts: `claude-sonnet-4-5` (versi stabil; user minta `claude-sonnet-4-6` tapi model tersebut belum tersedia)
