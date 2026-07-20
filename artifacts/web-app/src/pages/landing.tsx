@@ -26,7 +26,6 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
             <button onClick={() => scrollTo('cara-kerja')} className="text-muted-foreground hover:text-foreground transition-colors">Cara Kerja</button>
             <button onClick={() => scrollTo('harga')} className="text-muted-foreground hover:text-foreground transition-colors">Harga</button>
-            <button onClick={() => scrollTo('testimoni')} className="text-muted-foreground hover:text-foreground transition-colors">Testimoni</button>
             <button onClick={() => scrollTo('faq')} className="text-muted-foreground hover:text-foreground transition-colors">FAQ</button>
           </nav>
           
@@ -45,7 +44,6 @@ export default function LandingPage() {
           <div className="md:hidden border-b bg-background px-4 py-4 flex flex-col gap-4 shadow-lg absolute w-full">
             <button onClick={() => scrollTo('cara-kerja')} className="text-left font-medium p-2">Cara Kerja</button>
             <button onClick={() => scrollTo('harga')} className="text-left font-medium p-2">Harga</button>
-            <button onClick={() => scrollTo('testimoni')} className="text-left font-medium p-2">Testimoni</button>
             <button onClick={() => scrollTo('faq')} className="text-left font-medium p-2">FAQ</button>
             <Link href="/app" className="w-full text-center py-3 bg-primary text-white rounded-lg font-medium mt-2">
               Mulai Scan
@@ -82,13 +80,9 @@ export default function LandingPage() {
                 </button>
               </div>
               
-              <div className="mt-10 flex items-center gap-4 text-sm font-medium text-muted-foreground">
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-600">A</div>
-                  <div className="w-8 h-8 rounded-full bg-slate-300 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-700">R</div>
-                  <div className="w-8 h-8 rounded-full bg-slate-400 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-800">D</div>
-                </div>
-                <p>Dipercaya oleh 10.000+ mahasiswa.</p>
+              <div className="mt-10 flex items-center gap-3 text-sm font-medium text-muted-foreground">
+                <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+                <p>Bayar hanya saat kamu butuh. Tidak perlu akun, tidak perlu langganan.</p>
               </div>
             </div>
             
@@ -242,66 +236,7 @@ export default function LandingPage() {
         </section>
 
         {/* TESTIMONI */}
-        <section id="testimoni" className="py-24 bg-white border-y">
-          <div className="container mx-auto px-4 md:px-8">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4">Kata Mereka</h2>
-              <p className="text-muted-foreground text-lg">Ribuan mahasiswa telah menyelamatkan nilai mereka dengan AJOR.Scan.</p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card className="bg-background border-none shadow-sm">
-                <CardContent className="pt-6">
-                  <div className="flex gap-1 text-amber-500 mb-4">
-                    ★★★★★
-                  </div>
-                  <p className="text-foreground italic mb-6">"Penyelamat banget pas mau ngumpulin bab 1-3 skripsi. Ternyata banyak kutipan jurnal yang lupa kuparafrase. Harganya pas di kantong anak kos."</p>
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">R</div>
-                    <div>
-                      <p className="font-bold text-sm">Riska A.</p>
-                      <p className="text-xs text-muted-foreground">Mahasiswa UI</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-background border-none shadow-sm">
-                <CardContent className="pt-6">
-                  <div className="flex gap-1 text-amber-500 mb-4">
-                    ★★★★★
-                  </div>
-                  <p className="text-foreground italic mb-6">"Gak ribet harus bikin akun atau langganan bulanan kayak platform sebelah. Tinggal paste, bayar pake QRIS, langsung keluar hasilnya akurat."</p>
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">B</div>
-                    <div>
-                      <p className="font-bold text-sm">Bagas P.</p>
-                      <p className="text-xs text-muted-foreground">Mahasiswa UGM</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-background border-none shadow-sm">
-                <CardContent className="pt-6">
-                  <div className="flex gap-1 text-amber-500 mb-4">
-                    ★★★★★
-                  </div>
-                  <p className="text-foreground italic mb-6">"Laporannya PDF rapi banget, kelihatan profesional kalau misal diminta dosen sebagai bukti orisinalitas tugas akhir."</p>
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">D</div>
-                    <div>
-                      <p className="font-bold text-sm">Dinda S.</p>
-                      <p className="text-xs text-muted-foreground">Mahasiswa ITB</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <p className="text-center text-xs text-muted-foreground mt-8">*Testimoni berikut merupakan contoh ilustratif. Ganti dengan testimoni nyata sebelum publish.</p>
-          </div>
-        </section>
+        {/* Testimoni section — disembunyikan sampai ada testimoni asli dari pengguna nyata */}
 
         {/* FAQ */}
         <section id="faq" className="py-24 bg-background">
