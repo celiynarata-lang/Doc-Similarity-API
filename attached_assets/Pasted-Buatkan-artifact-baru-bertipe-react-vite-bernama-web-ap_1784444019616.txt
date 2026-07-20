@@ -1,0 +1,44 @@
+Buatkan artifact baru bertipe react-vite bernama "web-app" sebagai frontend yang akan menjadi entry point deployment (menggantikan api-server sebagai satu-satunya publishable target). api-server tetap berjalan sebagai shared backend di belakangnya, diakses lewat relative path /api (proxy ke api-server).
+
+DESAIN VISUAL (terapkan di semua halaman):
+- Tema terang/fresh: background #f6f7f4, surface putih #ffffff, garis #e2e6df, teks utama #171b18, teks muted #6c7570
+- Warna aksen hijau emerald: #1e7256 (primary), #155943 (hover/dark), #e1f2ea (soft background untuk badge/highlight)
+- Warna status: amber #c9832e (peringatan/medium), merah #c24b3f (tinggi/alert)
+- Font: Plus Jakarta Sans (headings tebal, body) dari Google Fonts, dan IBM Plex Mono untuk label/data teknis
+- Rounded corners besar (12-20px), shadow lembut, banyak whitespace, terasa modern dan simple (bukan gelap/berat)
+
+HALAMAN 1: Landing Page (route "/")
+- Nav sticky dengan logo "Scan.Lab", link ke #cara-kerja #harga #testimoni #faq, tombol "Mulai Scan" ke /app
+- Hero: headline "Cek orisinalitas tulisanmu, sebelum dosen yang cek.", subcopy singkat, 2 tombol CTA (Mulai Scan Sekarang -> /app, Lihat Harga -> #harga), lingkaran progress originality ring visual (94% Orisinal) sebagai elemen visual utama
+- Section "Cara kerja" 3 langkah: Tempel dokumen, Bayar sekali, Terima hasil
+- Section Harga: 3 kartu (Sekali Pakai Rp15.000/sesi, Paket Hemat Rp65.000/5 sesi -ditandai populer, Kampus/Organisasi hubungi kami)
+- Section Testimoni: 3 kartu testimoni contoh dengan catatan kecil "*Testimoni contoh, ganti dengan testimoni asli nanti"
+- Section FAQ accordion, termasuk poin "kami bukan afiliasi Turnitin resmi" dan soal penyimpanan data dokumen
+- Footer dengan disclaimer legal singkat
+
+HALAMAN 2: App/Scan Tool (route "/app")
+FITUR A - Preview Gratis (sebelum bayar):
+- User bisa tempel 1 dokumen dan klik "Cek Gratis (Preview)" TANPA perlu bayar dulu
+- Panggil endpoint baru POST /api/scan/preview dengan body { content } - endpoint ini TIDAK memanggil Anthropic API (gratis, tanpa biaya), hanya menghitung: jumlah kata, jumlah kalimat, dan localOverlapPercent (cek kemiripan ke database dokumen tersimpan pakai algoritma shingling yang sudah ada di similarity.js/compareAgainstStored, tapi TANPA menyimpan dokumen baru ini ke database dan TANPA cek ke web)
+- Tampilkan hasil preview: jumlah kata, jumlah kalimat, dan "Kemiripan awal dengan database kami: X%" sebagai teaser, dengan CTA "Untuk hasil lengkap + cek ke seluruh web, lanjutkan ke pembayaran"
+
+FITUR B - Scan Berbayar (alur utama, seperti sebelumnya):
+- User bisa tempel 1+ dokumen, isi email, klik "Bayar & Scan Lengkap"
+- Panggil POST /api/payment/create-transaction, lalu window.snap.pay() pakai Midtrans Snap (load script snap.js dari https://app.sandbox.midtrans.com/snap/snap.js dengan data-client-key dari env VITE_MIDTRANS_CLIENT_KEY)
+- Setelah bayar sukses, panggil POST /api/scan untuk tiap dokumen secara berurutan (dokumen pertama harus selesai dulu sebelum dokumen kedua, karena dokumen pertama perlu tersimpan ke DB dulu supaya bisa terdeteksi oleh dokumen kedua)
+- Tampilkan hasil lengkap: skor originalitas per dokumen, daftar kecocokan database (dengan tag jika itu dari dokumen lain di sesi yang sama), daftar kecocokan web dengan link sumber dan confidence score
+
+FITUR C - Laporan PDF:
+- Setelah hasil scan lengkap muncul, tampilkan tombol "Unduh Laporan PDF" per dokumen
+- Generate PDF di sisi client pakai library jsPDF (tanpa perlu endpoint backend baru), isi laporan: judul dokumen, tanggal scan, skor originalitas besar di atas, ringkasan overlap database dan web, daftar kecocokan web lengkap dengan link sumber, watermark kecil "Dibuat oleh Scan.Lab - bukan afiliasi Turnitin resmi"
+
+FITUR D - Riwayat Scan:
+- Tambahkan endpoint baru di api-server: GET /api/scan/history?email=xxx yang query tabel scan_results JOIN documents JOIN transactions WHERE transactions.user_email = xxx, return array { documentTitle, originalityScore, scanDate } diurutkan tanggal terbaru dulu
+- Di halaman /app, tambahkan section "Riwayat Scan Saya": input email, tombol "Lihat Riwayat", tampilkan sebagai list/tabel sederhana (judul dokumen, skor, tanggal)
+
+TEKNIS:
+- Semua fetch ke backend menggunakan relative path /api/... (proxy ke api-server, bukan hardcode URL)
+- Responsive mobile-first, karena user akan banyak akses dari HP
+- Setelah selesai, update artifact.toml supaya web-app (react-vite) menjadi deploymentTarget utama, dan pastikan project ini bisa di-Publish
+
+Setelah semua selesai dibuat, coba publish project ini dan laporkan hasilnya.

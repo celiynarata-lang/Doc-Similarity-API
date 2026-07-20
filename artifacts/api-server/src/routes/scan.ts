@@ -4,76 +4,29 @@ import { db } from "@workspace/db";
 import { transactions, documents, scan_results } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import {
+  compareAgainstStored,
+  computeLocalOverlap,
+} from "../lib/similarity";
 
 const router: IRouter = Router();
 
-// ── Shingling helpers ────────────────────────────────────────────────────────
+// ── Candidate sentences for web search ───────────────────────────────────────
 
-function tokenize(text: string): string[] {
-  return text
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((w) => w.length > 0);
+function tokenizeWords(text: string): string[] {
+  return text.toLowerCase().split(/\s+/).filter((w) => w.length > 0);
 }
 
-function makeShingles(words: string[], k = 6): Set<string> {
-  const shingles = new Set<string>();
-  for (let i = 0; i <= words.length - k; i++) {
-    shingles.add(words.slice(i, i + k).join(" "));
-  }
-  return shingles;
+function extractCandidateSentences(content: string, max = 5): string[] {
+  const sentences = content
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => tokenizeWords(s).length >= 7);
+  sentences.sort((a, b) => b.length - a.length);
+  return sentences.slice(0, max);
 }
 
-function computeContainment(setA: Set<string>, setB: Set<string>): number {
-  if (setA.size === 0 || setB.size === 0) return 0;
-  let shared = 0;
-  for (const s of setA) {
-    if (setB.has(s)) shared++;
-  }
-  return (shared / Math.min(setA.size, setB.size)) * 100;
-}
-
-interface LocalMatch {
-  documentId: string;
-  title: string;
-  containment: number;
-  sharedCount: number;
-}
-
-function computeLocalOverlap(
-  newWords: string[],
-  newShingles: Set<string>,
-  matchedShingleSets: Set<string>[],
-): number {
-  if (newWords.length === 0 || matchedShingleSets.length === 0) return 0;
-
-  // Collect all shingles that matched at least one stored document
-  const matchedShingles = new Set<string>();
-  for (const stored of matchedShingleSets) {
-    for (const s of newShingles) {
-      if (stored.has(s)) matchedShingles.add(s);
-    }
-  }
-
-  if (matchedShingles.size === 0) return 0;
-
-  // Count words in new doc that appear in at least one matched shingle
-  const matchedWords = new Set<string>();
-  for (const shingle of matchedShingles) {
-    for (const word of shingle.split(" ")) {
-      matchedWords.add(word);
-    }
-  }
-
-  let matchedWordCount = 0;
-  for (const word of newWords) {
-    if (matchedWords.has(word)) matchedWordCount++;
-  }
-
-  return Math.round((matchedWordCount / newWords.length) * 100);
-}
-
-// ── Anthropic web search helpers ─────────────────────────────────────────────
+// ── Anthropic web search ──────────────────────────────────────────────────────
 
 interface WebSearchResult {
   matched: boolean;
@@ -84,19 +37,10 @@ interface WebSearchResult {
   sentence: string;
 }
 
-async function checkSentenceOnline(
-  sentence: string,
-): Promise<WebSearchResult> {
+async function checkSentenceOnline(sentence: string): Promise<WebSearchResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return {
-      matched: false,
-      source_url: null,
-      source_title: null,
-      confidence: 0,
-      note: "ANTHROPIC_API_KEY not set",
-      sentence,
-    };
+    return { matched: false, source_url: null, source_title: null, confidence: 0, note: "ANTHROPIC_API_KEY not set", sentence };
   }
 
   try {
@@ -113,66 +57,26 @@ async function checkSentenceOnline(
         max_tokens: 1024,
         system:
           'You are a plagiarism-detection assistant with web search access. Search the web to check if this sentence already exists online. Respond with ONLY a JSON object: {"matched": boolean, "source_url": string|null, "source_title": string|null, "confidence": number 0-100, "note": string}',
-        tools: [
-          {
-            type: "web_search_20250305",
-            name: "web_search",
-          },
-        ],
-        messages: [
-          {
-            role: "user",
-            content: sentence,
-          },
-        ],
+        tools: [{ type: "web_search_20250305", name: "web_search" }],
+        messages: [{ role: "user", content: sentence }],
       }),
     });
 
     if (!response.ok) {
       const errorBody = await response.text();
-      logger.error(
-        { status: response.status, body: errorBody },
-        "Anthropic API returned non-ok status",
-      );
-      return {
-        matched: false,
-        source_url: null,
-        source_title: null,
-        confidence: 0,
-        note: `API error ${response.status}`,
-        sentence,
-      };
+      logger.error({ status: response.status, body: errorBody }, "Anthropic API returned non-ok status");
+      return { matched: false, source_url: null, source_title: null, confidence: 0, note: `API error ${response.status}`, sentence };
     }
 
-    const data = (await response.json()) as {
-      content: Array<{ type: string; text?: string }>;
-    };
-
-    // Find the text block in response (after tool use)
-    const textBlock = data.content
-      .filter((c) => c.type === "text")
-      .map((c) => c.text ?? "")
-      .join("");
-
-    // Extract JSON from the text
+    const data = (await response.json()) as { content: Array<{ type: string; text?: string }> };
+    const textBlock = data.content.filter((c) => c.type === "text").map((c) => c.text ?? "").join("");
     const jsonMatch = textBlock.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return {
-        matched: false,
-        source_url: null,
-        source_title: null,
-        confidence: 0,
-        note: "Could not parse response",
-        sentence,
-      };
+      return { matched: false, source_url: null, source_title: null, confidence: 0, note: "Could not parse response", sentence };
     }
 
     const parsed = JSON.parse(jsonMatch[0]) as {
-      matched?: boolean;
-      source_url?: string | null;
-      source_title?: string | null;
-      confidence?: number;
-      note?: string;
+      matched?: boolean; source_url?: string | null; source_title?: string | null; confidence?: number; note?: string;
     };
 
     return {
@@ -185,41 +89,15 @@ async function checkSentenceOnline(
     };
   } catch (err) {
     logger.error({ err }, "Anthropic web search failed");
-    return {
-      matched: false,
-      source_url: null,
-      source_title: null,
-      confidence: 0,
-      note: "Request failed",
-      sentence,
-    };
+    return { matched: false, source_url: null, source_title: null, confidence: 0, note: "Request failed", sentence };
   }
 }
 
-function extractCandidateSentences(content: string, max = 5): string[] {
-  // Split by sentence-ending punctuation
-  const sentences = content
-    .split(/(?<=[.!?])\s+/)
-    .map((s) => s.trim())
-    .filter((s) => {
-      const words = tokenize(s);
-      return words.length >= 7;
-    });
-
-  // Sort by length descending, take top max
-  sentences.sort((a, b) => b.length - a.length);
-  return sentences.slice(0, max);
-}
-
-// ── POST /api/scan ────────────────────────────────────────────────────────────
+// ── POST /api/scan ─────────────────────────────────────────────────────────────
 
 router.post("/scan", async (req: Request, res: Response) => {
   try {
-    const { orderId, title, content } = req.body as {
-      orderId?: string;
-      title?: string;
-      content?: string;
-    };
+    const { orderId, title, content } = req.body as { orderId?: string; title?: string; content?: string };
 
     if (!orderId || !title || !content) {
       res.status(400).json({ error: "orderId, title, and content are required" });
@@ -227,109 +105,46 @@ router.post("/scan", async (req: Request, res: Response) => {
     }
 
     // 1. Verify transaction is paid
-    const [tx] = await db
-      .select()
-      .from(transactions)
-      .where(eq(transactions.order_id, orderId))
-      .limit(1);
+    const [tx] = await db.select().from(transactions).where(eq(transactions.order_id, orderId)).limit(1);
+    if (!tx) { res.status(404).json({ error: "Transaction not found" }); return; }
+    if (tx.status !== "paid") { res.status(402).json({ error: "Payment required. Transaction status: " + tx.status }); return; }
 
-    if (!tx) {
-      res.status(404).json({ error: "Transaction not found" });
-      return;
-    }
-
-    if (tx.status !== "paid") {
-      res.status(402).json({
-        error: "Payment required. Transaction status: " + tx.status,
-      });
-      return;
-    }
-
-    // 2. Load existing documents (limit 2000, ordered by created_at asc)
+    // 2. Load existing documents
     const existingDocs = await db
-      .select()
+      .select({ id: documents.id, title: documents.title, content: documents.content })
       .from(documents)
       .orderBy(asc(documents.created_at))
       .limit(2000);
 
-    // 3. Shingling comparison
-    const newWords = tokenize(content);
-    const newShingles = makeShingles(newWords);
+    // 3. Local shingling comparison
+    const { newWords, newShingles, localMatches, matchedShingleSets } =
+      compareAgainstStored(content, existingDocs);
 
-    const localMatches: LocalMatch[] = [];
-    const matchedShingleSetsForOverlap: Set<string>[] = [];
+    // 4. Local overlap percent
+    const localOverlapPercent = computeLocalOverlap(newWords, newShingles, matchedShingleSets);
 
-    for (const doc of existingDocs) {
-      const docWords = tokenize(doc.content);
-      const docShingles = makeShingles(docWords);
-      const containment = computeContainment(newShingles, docShingles);
-
-      let shared = 0;
-      for (const s of newShingles) {
-        if (docShingles.has(s)) shared++;
-      }
-
-      if (containment > 0) {
-        localMatches.push({
-          documentId: doc.id,
-          title: doc.title,
-          containment: Math.round(containment),
-          sharedCount: shared,
-        });
-        matchedShingleSetsForOverlap.push(docShingles);
-      }
-    }
-
-    // Sort by containment desc
-    localMatches.sort((a, b) => b.containment - a.containment);
-
-    // 4. Compute local overlap percent
-    const localOverlapPercent = computeLocalOverlap(
-      newWords,
-      newShingles,
-      matchedShingleSetsForOverlap,
-    );
-
-    // 5. Web search via Anthropic for top 5 longest sentences
+    // 5. Web search via Anthropic
     const candidateSentences = extractCandidateSentences(content, 5);
     const webResults: WebSearchResult[] = await Promise.all(
       candidateSentences.map((s) => checkSentenceOnline(s)),
     );
 
-    // 6. Compute webMatchPercent
+    // 6. Web match percent
     const totalWords = newWords.length;
     let webMatchedWordCount = 0;
-
     for (const result of webResults) {
       if (result.matched) {
-        const sentenceWords = tokenize(result.sentence);
-        webMatchedWordCount += sentenceWords.length;
+        webMatchedWordCount += tokenizeWords(result.sentence).length;
       }
     }
+    const webMatchPercent = totalWords > 0 ? Math.round((webMatchedWordCount / totalWords) * 100) : 0;
 
-    const webMatchPercent =
-      totalWords > 0
-        ? Math.round((webMatchedWordCount / totalWords) * 100)
-        : 0;
+    // 7. Originality score
+    const originalityScore = Math.max(0, Math.min(100, 100 - Math.max(localOverlapPercent, webMatchPercent)));
 
-    // 7. Compute originality score
-    const rawScore = 100 - Math.max(localOverlapPercent, webMatchPercent);
-    const originalityScore = Math.max(0, Math.min(100, rawScore));
-
-    // 8. Save document to DB
-    const contentHash = createHash("sha256")
-      .update(content.toLowerCase().trim())
-      .digest("hex");
-
-    const [insertedDoc] = await db
-      .insert(documents)
-      .values({
-        transaction_id: tx.id,
-        title,
-        content,
-        content_hash: contentHash,
-      })
-      .returning();
+    // 8. Save document
+    const contentHash = createHash("sha256").update(content.toLowerCase().trim()).digest("hex");
+    const [insertedDoc] = await db.insert(documents).values({ transaction_id: tx.id, title, content, content_hash: contentHash }).returning();
 
     // 9. Save scan result
     await db.insert(scan_results).values({
@@ -338,21 +153,10 @@ router.post("/scan", async (req: Request, res: Response) => {
       originality_score: originalityScore,
       local_overlap_percent: localOverlapPercent,
       web_match_percent: webMatchPercent,
-      details: {
-        localMatches: localMatches.slice(0, 20), // store top 20 for details
-        webResults,
-        candidateSentences,
-      },
+      details: { localMatches: localMatches.slice(0, 20), webResults, candidateSentences },
     });
 
-    res.json({
-      documentId: insertedDoc.id,
-      originalityScore,
-      localOverlapPercent,
-      webMatchPercent,
-      localMatches,
-      webResults,
-    });
+    res.json({ documentId: insertedDoc.id, originalityScore, localOverlapPercent, webMatchPercent, localMatches, webResults });
   } catch (err) {
     logger.error({ err }, "scan error");
     res.status(500).json({ error: "Scan failed" });

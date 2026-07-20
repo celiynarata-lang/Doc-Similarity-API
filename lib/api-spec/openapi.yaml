@@ -3,20 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for Scan.Lab document similarity service
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: payment
+    description: Payment operations
+  - name: scan
+    description: Document scan operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +27,298 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /payment/create-transaction:
+    post:
+      operationId: createTransaction
+      tags: [payment]
+      summary: Create a Midtrans Snap transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionInput"
+      responses:
+        "200":
+          description: Transaction created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+
+  /payment/notification:
+    post:
+      operationId: paymentNotification
+      tags: [payment]
+      summary: Receive Midtrans webhook notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationPayload"
+      responses:
+        "200":
+          description: Notification processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResult"
+
+  /payment/status/{orderId}:
+    get:
+      operationId: getPaymentStatus
+      tags: [payment]
+      summary: Get transaction status by order ID
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Transaction status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentStatus"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+
+  /scan:
+    post:
+      operationId: createScan
+      tags: [scan]
+      summary: Run a full paid similarity scan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanInput"
+      responses:
+        "200":
+          description: Scan result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResult"
+        "402":
+          description: Payment required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+        "404":
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+
+  /scan/preview:
+    post:
+      operationId: previewScan
+      tags: [scan]
+      summary: Free preview scan (no payment, no web check, no save)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreviewInput"
+      responses:
+        "200":
+          description: Preview result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreviewResult"
+
+  /scan/history:
+    get:
+      operationId: getScanHistory
+      tags: [scan]
+      summary: Get scan history by email
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scan history list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScanHistoryItem"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    ErrorResult:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    OkResult:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+
+    NotificationPayload:
+      type: object
+      additionalProperties: true
+
+    TransactionInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+
+    TransactionResult:
+      type: object
+      required: [orderId, snapToken, redirectUrl]
+      properties:
+        orderId:
+          type: string
+        snapToken:
+          type: string
+        redirectUrl:
+          type: string
+
+    PaymentStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    ScanInput:
+      type: object
+      required: [orderId, title, content]
+      properties:
+        orderId:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+
+    LocalMatch:
+      type: object
+      required: [documentId, title, containment, sharedCount]
+      properties:
+        documentId:
+          type: string
+        title:
+          type: string
+        containment:
+          type: integer
+        sharedCount:
+          type: integer
+
+    WebResult:
+      type: object
+      required: [matched, confidence, note, sentence]
+      properties:
+        matched:
+          type: boolean
+        source_url:
+          type: ["string", "null"]
+        source_title:
+          type: ["string", "null"]
+        confidence:
+          type: integer
+        note:
+          type: string
+        sentence:
+          type: string
+
+    ScanResult:
+      type: object
+      required: [documentId, originalityScore, localOverlapPercent, webMatchPercent, localMatches, webResults]
+      properties:
+        documentId:
+          type: string
+        originalityScore:
+          type: integer
+        localOverlapPercent:
+          type: integer
+        webMatchPercent:
+          type: integer
+        localMatches:
+          type: array
+          items:
+            $ref: "#/components/schemas/LocalMatch"
+        webResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebResult"
+
+    PreviewInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+
+    PreviewResult:
+      type: object
+      required: [wordCount, sentenceCount, localOverlapPercent]
+      properties:
+        wordCount:
+          type: integer
+        sentenceCount:
+          type: integer
+        localOverlapPercent:
+          type: integer
+
+    ScanHistoryItem:
+      type: object
+      required: [documentTitle, originalityScore, scanDate]
+      properties:
+        documentTitle:
+          type: string
+        originalityScore:
+          type: integer
+        scanDate:
+          type: string
