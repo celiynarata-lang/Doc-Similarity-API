@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
@@ -44,9 +44,23 @@ const scanBerbayarSchema = z.object({
 
 type ScanBerbayarFormValues = z.infer<typeof scanBerbayarSchema>;
 
+// ── Package config ────────────────────────────────────────────────────────────
+const PACKAGE_CONFIG = {
+  single: { label: "Sekali Pakai", price: 15000, maxDocs: 1, credits: 1 },
+  hemat:  { label: "Paket Hemat",  price: 65000, maxDocs: 5, credits: 5 },
+} as const;
+type PackageKey = keyof typeof PACKAGE_CONFIG;
+
+function getPackageFromUrl(): PackageKey {
+  const params = new URLSearchParams(window.location.search);
+  const pkg = params.get("package");
+  return pkg === "hemat" ? "hemat" : "single";
+}
+
 export default function AppToolPage() {
   const [activeTab, setActiveTab] = useState<'preview' | 'scan' | 'hasil' | 'riwayat'>('preview');
-  
+  const [selectedPackage, setSelectedPackage] = useState<PackageKey>(getPackageFromUrl);
+
   // Results states
   const [previewResult, setPreviewResult] = useState<{wordCount: number, sentenceCount: number, localOverlapPercent: number} | null>(null);
   const [scanResults, setScanResults] = useState<ScanResult[]>([]);
@@ -106,8 +120,12 @@ export default function AppToolPage() {
   };
 
   const onScanBerbayarSubmit = (values: ScanBerbayarFormValues) => {
+    const pkgCfg = PACKAGE_CONFIG[selectedPackage];
+    // Enforce doc count limit per package (trim silently if somehow over limit)
+    const docs = values.documents.slice(0, pkgCfg.maxDocs);
+
     // 1. Create Transaction
-    createTx.mutate({ data: { email: values.email } }, {
+    createTx.mutate({ data: { email: values.email, package: selectedPackage } }, {
       onSuccess: (txData) => {
         // 2. Open Midtrans Snap
         if (window.snap) {
@@ -117,13 +135,13 @@ export default function AppToolPage() {
               setActiveTab('hasil');
               setIsScanning(true);
               setScanResults([]);
-              setScanProgress({ current: 0, total: values.documents.length });
+              setScanProgress({ current: 0, total: docs.length });
               
               const newResults: ScanResult[] = [];
               
               // SEQUENTIAL LOOP - Important so first doc saves to DB before second doc is checked against it
-              for (let i = 0; i < values.documents.length; i++) {
-                const doc = values.documents[i];
+              for (let i = 0; i < docs.length; i++) {
+                const doc = docs[i];
                 setScanProgress({ current: i + 1, total: values.documents.length });
                 
                 try {
@@ -358,6 +376,47 @@ export default function AppToolPage() {
             
             <form onSubmit={formScan.handleSubmit(onScanBerbayarSubmit)}>
               <CardContent className="pt-8 flex flex-col gap-8">
+
+                {/* Package Selector */}
+                <div className="flex flex-col gap-3">
+                  <label className="text-sm font-bold text-foreground">Pilih Paket</label>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {(Object.entries(PACKAGE_CONFIG) as [PackageKey, typeof PACKAGE_CONFIG[PackageKey]][]).map(([key, cfg]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPackage(key);
+                          // Trim documents to new max if needed
+                          const current = formScan.getValues("documents");
+                          if (current.length > cfg.maxDocs) {
+                            formScan.setValue("documents", current.slice(0, cfg.maxDocs));
+                          }
+                        }}
+                        className={cn(
+                          "text-left p-4 rounded-xl border-2 transition-all",
+                          selectedPackage === key
+                            ? "border-primary bg-accent"
+                            : "border-border bg-white hover:border-primary/50"
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-sm">{cfg.label}</span>
+                          {key === "hemat" && (
+                            <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">HEMAT</span>
+                          )}
+                        </div>
+                        <span className="text-xl font-extrabold text-primary">
+                          Rp {cfg.price.toLocaleString('id-ID')}
+                        </span>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {cfg.credits === 1 ? "1 scan dokumen" : `${cfg.credits} scan dokumen`}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Email Section */}
                 <div className="bg-slate-50 p-6 rounded-xl border">
                   <label className="block text-sm font-bold text-foreground mb-2">Email Pengiriman Resi & Riwayat</label>
@@ -421,7 +480,7 @@ export default function AppToolPage() {
                     </div>
                   ))}
 
-                  {fields.length < 5 && (
+                  {fields.length < PACKAGE_CONFIG[selectedPackage].maxDocs && (
                     <Button 
                       type="button" 
                       variant="outline" 
@@ -435,10 +494,14 @@ export default function AppToolPage() {
               </CardContent>
               
               <div className="bg-slate-50 p-6 border-t mt-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-sm font-semibold text-muted-foreground">Total:</span>
-                  <span className="text-3xl font-black text-foreground">Rp {fields.length === 5 ? '65.000' : (fields.length * 15000).toLocaleString('id-ID')}</span>
-                  {fields.length === 5 && <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full ml-2">HEMAT 10RB</span>}
+                  <span className="text-3xl font-black text-foreground">
+                    Rp {PACKAGE_CONFIG[selectedPackage].price.toLocaleString('id-ID')}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    ({PACKAGE_CONFIG[selectedPackage].label} — {PACKAGE_CONFIG[selectedPackage].credits} scan)
+                  </span>
                 </div>
                 
                 <Button 

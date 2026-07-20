@@ -213,6 +213,10 @@ components:
       properties:
         email:
           type: string
+        package:
+          type: string
+          enum: [single, hemat]
+          description: "Pricing package: 'single' = Rp15.000 / 1 scan, 'hemat' = Rp65.000 / 5 scans"
 
     TransactionResult:
       type: object

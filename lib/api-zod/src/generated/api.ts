@@ -20,7 +20,8 @@ export const HealthCheckResponse = zod.object({
  * @summary Create a Midtrans Snap transaction
  */
 export const CreateTransactionBody = zod.object({
-  "email": zod.string()
+  "email": zod.string(),
+  "package": zod.enum(['single', 'hemat']).optional().describe('Pricing package: \'single\' = Rp15.000 \/ 1 scan, \'hemat\' = Rp65.000 \/ 5 scans')
 })
 
 export const CreateTransactionResponse = zod.object({

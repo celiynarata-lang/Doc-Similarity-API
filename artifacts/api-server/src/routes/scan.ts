@@ -2,7 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { createHash } from "crypto";
 import { db } from "@workspace/db";
 import { transactions, documents, scan_results } from "@workspace/db";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import {
   compareAgainstStored,
@@ -104,10 +104,14 @@ router.post("/scan", async (req: Request, res: Response) => {
       return;
     }
 
-    // 1. Verify transaction is paid
+    // 1. Verify transaction is paid and has remaining credits
     const [tx] = await db.select().from(transactions).where(eq(transactions.order_id, orderId)).limit(1);
     if (!tx) { res.status(404).json({ error: "Transaction not found" }); return; }
     if (tx.status !== "paid") { res.status(402).json({ error: "Payment required. Transaction status: " + tx.status }); return; }
+    if (tx.scan_credits_remaining <= 0) {
+      res.status(402).json({ error: "Kredit scan habis, silakan beli paket baru" });
+      return;
+    }
 
     // 2. Load existing documents
     const existingDocs = await db
@@ -142,11 +146,17 @@ router.post("/scan", async (req: Request, res: Response) => {
     // 7. Originality score
     const originalityScore = Math.max(0, Math.min(100, 100 - Math.max(localOverlapPercent, webMatchPercent)));
 
-    // 8. Save document
+    // 8. Decrement scan credits atomically
+    await db
+      .update(transactions)
+      .set({ scan_credits_remaining: sql`${transactions.scan_credits_remaining} - 1` })
+      .where(eq(transactions.order_id, orderId));
+
+    // 9. Save document
     const contentHash = createHash("sha256").update(content.toLowerCase().trim()).digest("hex");
     const [insertedDoc] = await db.insert(documents).values({ transaction_id: tx.id, title, content, content_hash: contentHash }).returning();
 
-    // 9. Save scan result
+    // 10. Save scan result
     await db.insert(scan_results).values({
       transaction_id: tx.id,
       document_id: insertedDoc.id,

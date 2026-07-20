@@ -41,6 +41,13 @@ export async function runMigrations() {
       );
     `);
 
+    // Add package columns if missing (idempotent)
+    await client.query(`
+      ALTER TABLE transactions
+        ADD COLUMN IF NOT EXISTS package TEXT NOT NULL DEFAULT 'single',
+        ADD COLUMN IF NOT EXISTS scan_credits_remaining INTEGER NOT NULL DEFAULT 1;
+    `);
+
     logger.info("Database migrations completed successfully");
   } finally {
     client.release();

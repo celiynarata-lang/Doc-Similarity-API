@@ -55,6 +55,12 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* HERO SECTION */}
         <section className="pt-24 pb-32 overflow-hidden relative">
+          {/* Subtle animated blobs — hero only, respects prefers-reduced-motion */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            <div className="hero-blob hero-blob-1" />
+            <div className="hero-blob hero-blob-2" />
+            <div className="hero-blob hero-blob-3" />
+          </div>
           <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent/50 via-background to-background"></div>
           
           <div className="container mx-auto px-4 md:px-8 grid lg:grid-cols-2 gap-16 items-center">
@@ -173,7 +179,7 @@ export default function LandingPage() {
                   </ul>
                 </CardContent>
                 <div className="mt-auto p-6 pt-0">
-                  <Link href="/app" className="flex items-center justify-center w-full h-11 rounded-lg border-2 border-primary text-primary font-bold hover:bg-accent transition-colors">
+                  <Link href="/app?package=single" className="flex items-center justify-center w-full h-11 rounded-lg border-2 border-primary text-primary font-bold hover:bg-accent transition-colors">
                     Pilih Paket
                   </Link>
                 </div>
@@ -203,7 +209,7 @@ export default function LandingPage() {
                   </ul>
                 </CardContent>
                 <div className="mt-auto p-6 pt-0">
-                  <Link href="/app" className="flex items-center justify-center w-full h-12 rounded-lg bg-primary text-white font-bold hover:bg-emerald-800 transition-colors shadow-md">
+                  <Link href="/app?package=hemat" className="flex items-center justify-center w-full h-12 rounded-lg bg-primary text-white font-bold hover:bg-emerald-800 transition-colors shadow-md">
                     Beli Paket Hemat
                   </Link>
                 </div>

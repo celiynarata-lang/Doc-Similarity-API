@@ -19,5 +19,6 @@ export * from './scanHistoryItem';
 export * from './scanInput';
 export * from './scanResult';
 export * from './transactionInput';
+export * from './transactionInputPackage';
 export * from './transactionResult';
 export * from './webResult';

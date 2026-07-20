@@ -6,6 +6,8 @@ export const transactions = pgTable("transactions", {
   user_email: text("user_email").notNull(),
   amount: integer("amount").notNull(),
   status: text("status").notNull().default("pending"),
+  package: text("package").notNull().default("single"),
+  scan_credits_remaining: integer("scan_credits_remaining").notNull().default(1),
   midtrans_transaction_id: text("midtrans_transaction_id"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   paid_at: timestamp("paid_at"),

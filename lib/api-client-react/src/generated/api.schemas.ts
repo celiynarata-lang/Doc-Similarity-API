@@ -19,8 +19,21 @@ export interface OkResult {
 
 export interface NotificationPayload { [key: string]: unknown }
 
+/**
+ * Pricing package: 'single' = Rp15.000 / 1 scan, 'hemat' = Rp65.000 / 5 scans
+ */
+export type TransactionInputPackage = typeof TransactionInputPackage[keyof typeof TransactionInputPackage];
+
+
+export const TransactionInputPackage = {
+  single: 'single',
+  hemat: 'hemat',
+} as const;
+
 export interface TransactionInput {
   email: string;
+  /** Pricing package: 'single' = Rp15.000 / 1 scan, 'hemat' = Rp65.000 / 5 scans */
+  package?: TransactionInputPackage;
 }
 
 export interface TransactionResult {

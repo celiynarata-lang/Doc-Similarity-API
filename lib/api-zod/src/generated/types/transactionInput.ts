@@ -5,7 +5,10 @@
  * API specification for Scan.Lab document similarity service
  * OpenAPI spec version: 0.1.0
  */
+import type { TransactionInputPackage } from './transactionInputPackage';
 
 export interface TransactionInput {
   email: string;
+  /** Pricing package: 'single' = Rp15.000 / 1 scan, 'hemat' = Rp65.000 / 5 scans */
+  package?: TransactionInputPackage;
 }

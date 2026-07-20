@@ -34,15 +34,18 @@ router.post(
   "/payment/create-transaction",
   async (req: Request, res: Response) => {
     try {
-      const { email } = req.body as { email?: string };
+      const { email, package: pkg } = req.body as { email?: string; package?: string };
       if (!email) {
         res.status(400).json({ error: "email is required" });
         return;
       }
 
-      const orderId = `SCAN-${randomUUID()}`;
-      const amount = parseInt(process.env.PRICE_PER_SCAN ?? "15000", 10);
+      // Determine amount and credits based on package
+      const validPackage = pkg === "hemat" ? "hemat" : "single";
+      const amount = validPackage === "hemat" ? 65000 : 15000;
+      const scanCredits = validPackage === "hemat" ? 5 : 1;
 
+      const orderId = `SCAN-${randomUUID()}`;
       const snap = getMidtransSnap();
 
       const snapResponse = await snap.createTransaction({
@@ -61,6 +64,8 @@ router.post(
         user_email: email,
         amount,
         status: "pending",
+        package: validPackage,
+        scan_credits_remaining: scanCredits,
       });
 
       res.json({
