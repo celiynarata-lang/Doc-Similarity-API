@@ -173,7 +173,7 @@ export default function AppToolPage() {
     // Header
     doc.setFontSize(18);
     doc.setTextColor(30, 114, 86); // emerald primary
-    doc.text("LAPORAN SCAN KEMIRIPAN - Scan.Lab", 20, 20);
+    doc.text("LAPORAN SCAN KEMIRIPAN - AJOR.Scan", 20, 20);
     
     doc.setFontSize(12);
     doc.setTextColor(50, 50, 50);
@@ -239,7 +239,7 @@ export default function AppToolPage() {
     // Footer
     doc.setFontSize(9);
     doc.setTextColor(150, 150, 150);
-    doc.text("Dibuat oleh Scan.Lab — bukan afiliasi Turnitin resmi. Hasil bersifat indikatif.", 20, 290);
+    doc.text("Dibuat oleh AJOR.Scan — bukan afiliasi Turnitin resmi. Hasil bersifat indikatif.", 20, 290);
     
     doc.save(`laporan-scan-${safeTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`);
   };
@@ -262,8 +262,8 @@ export default function AppToolPage() {
       <header className="bg-white border-b sticky top-0 z-40">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="font-bold text-xl tracking-tight text-primary flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-sm font-black">S</span>
-            Scan.Lab
+            <span className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-sm font-black">A</span>
+            AJOR.Scan
           </Link>
           <div className="text-sm font-medium text-muted-foreground flex gap-4 hidden md:flex">
             <a href="#preview-gratis" className="hover:text-foreground">Preview</a>

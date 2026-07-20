@@ -19,8 +19,8 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="font-bold text-xl tracking-tight text-primary flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-sm font-black">S</span>
-            Scan.Lab
+            <span className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center text-sm font-black">A</span>
+            AJOR.Scan
           </Link>
           
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
@@ -246,7 +246,7 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 md:px-8">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-4">Kata Mereka</h2>
-              <p className="text-muted-foreground text-lg">Ribuan mahasiswa telah menyelamatkan nilai mereka dengan Scan.Lab.</p>
+              <p className="text-muted-foreground text-lg">Ribuan mahasiswa telah menyelamatkan nilai mereka dengan AJOR.Scan.</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
@@ -314,7 +314,7 @@ export default function LandingPage() {
               <AccordionItem value="item-1">
                 <AccordionTrigger className="text-base">Apakah ini afiliasi resmi Turnitin?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground leading-relaxed">
-                  Tidak, Scan.Lab adalah layanan independen dan tidak berafiliasi dengan Turnitin® atau penyedia layanan kampus manapun. Kami menggunakan algoritma deteksi kemiripan dan database mandiri kami sendiri yang membandingkan dengan jutaan sumber publik di internet.
+                  Tidak, AJOR.Scan adalah layanan independen dan tidak berafiliasi dengan Turnitin® atau penyedia layanan kampus manapun. Kami menggunakan algoritma deteksi kemiripan dan database mandiri kami sendiri yang membandingkan dengan jutaan sumber publik di internet.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2">
@@ -366,7 +366,7 @@ export default function LandingPage() {
       <footer className="bg-slate-950 text-slate-400 py-12 border-t border-slate-900">
         <div className="container mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center md:items-start gap-8">
           <div className="max-w-xs text-center md:text-left">
-            <Link href="/" className="font-bold text-2xl tracking-tight text-white mb-4 block">Scan.Lab</Link>
+            <Link href="/" className="font-bold text-2xl tracking-tight text-white mb-4 block">AJOR.Scan</Link>
             <p className="text-sm">Alat cek orisinalitas andalan mahasiswa Indonesia. Bebas ribet, bayar seperlunya.</p>
           </div>
           
@@ -377,8 +377,8 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="container mx-auto px-4 md:px-8 mt-12 text-xs text-center text-slate-600">
-          <p>Disclaimer: Scan.Lab adalah layanan independen dan tidak berafiliasi dengan Turnitin® atau pihak manapun. Hasil scan bersifat indikatif dan tidak menjamin keputusan institusi.</p>
-          <p className="mt-2">© {new Date().getFullYear()} Scan.Lab. All rights reserved.</p>
+          <p>Disclaimer: AJOR.Scan adalah layanan independen dan tidak berafiliasi dengan Turnitin® atau pihak manapun. Hasil scan bersifat indikatif dan tidak menjamin keputusan institusi.</p>
+          <p className="mt-2">© {new Date().getFullYear()} AJOR.Scan. All rights reserved.</p>
         </div>
       </footer>
     </div>
