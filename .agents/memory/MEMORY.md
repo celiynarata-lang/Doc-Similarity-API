@@ -1,0 +1,1 @@
+- [Scan.Lab Architecture](scanlab-architecture.md) — key decisions: Midtrans Snap env injection, sequential scan loop, confidence scale, OpenAPI collision fix, hook signatures, missing radix-icons.
