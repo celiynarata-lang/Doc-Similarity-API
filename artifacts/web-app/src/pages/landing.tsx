@@ -232,9 +232,9 @@ export default function LandingPage() {
                   </ul>
                 </CardContent>
                 <div className="mt-auto p-6 pt-0">
-                  <button className="flex items-center justify-center w-full h-11 rounded-lg border border-input text-foreground font-medium hover:bg-accent transition-colors">
+                  <a href="mailto:hello@ajorscan.com" className="flex items-center justify-center w-full h-11 rounded-lg border border-input text-foreground font-medium hover:bg-accent transition-colors">
                     Kontak Sales
-                  </button>
+                  </a>
                 </div>
               </Card>
             </div>
@@ -312,9 +312,9 @@ export default function LandingPage() {
           </div>
           
           <div className="flex gap-8 text-sm">
-            <a href="#" className="hover:text-white transition-colors">Syarat & Ketentuan</a>
-            <a href="#" className="hover:text-white transition-colors">Kebijakan Privasi</a>
-            <a href="#" className="hover:text-white transition-colors">Kontak</a>
+            <Link href="/terms" className="hover:text-white transition-colors">Syarat & Ketentuan</Link>
+            <Link href="/privacy" className="hover:text-white transition-colors">Kebijakan Privasi</Link>
+            <Link href="/contact" className="hover:text-white transition-colors">Kontak</Link>
           </div>
         </div>
         <div className="container mx-auto px-4 md:px-8 mt-12 text-xs text-center text-slate-600">

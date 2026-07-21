@@ -8,6 +8,7 @@ import {
   useCreateTransaction, 
   useCreateScan, 
   useGetScanHistory,
+  getGetScanHistoryQueryKey,
   ScanResult,
   ScanHistoryItem
 } from "@workspace/api-client-react";
@@ -23,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 // Make sure you replace this with your actual client key in the HTML or env
 // We defined window.snap.pay in types.
@@ -78,7 +80,7 @@ export default function AppToolPage() {
   
   const { data: historyData, isLoading: isLoadingHistory } = useGetScanHistory(
     { email: historyEmail },
-    { query: { enabled: searchHistoryTrigger && !!historyEmail } }
+    { query: { queryKey: getGetScanHistoryQueryKey({ email: historyEmail }), enabled: searchHistoryTrigger && !!historyEmail } }
   );
 
   // Forms
@@ -164,21 +166,41 @@ export default function AppToolPage() {
               document.getElementById('hasil-scan')?.scrollIntoView({ behavior: 'smooth' });
             },
             onPending: (result) => {
-              alert("Menunggu pembayaran. Silakan selesaikan pembayaran Anda.");
+              toast({
+                title: "Menunggu pembayaran",
+                description: "Silakan selesaikan pembayaran Anda.",
+              });
             },
             onError: (result) => {
-              alert("Pembayaran gagal. Silakan coba lagi.");
+              toast({
+                title: "Pembayaran gagal",
+                description: "Silakan coba lagi.",
+                variant: "destructive",
+              });
             },
             onClose: () => {
               console.log("Customer closed the popup without finishing the payment");
             }
           });
         } else {
-          alert("Midtrans Snap is not loaded.");
+          toast({
+            title: "Midtrans belum siap",
+            description: "Midtrans Snap belum termuat. Silakan refresh halaman dan coba lagi.",
+            variant: "destructive",
+          });
         }
       },
       onError: (err) => {
-        alert("Gagal membuat transaksi: " + (err as any)?.error || "Unknown error");
+        const message =
+          (err as any)?.error ??
+          (err as any)?.message ??
+          (err as any)?.response?.data?.error ??
+          "Unknown error";
+        toast({
+          title: "Gagal membuat transaksi",
+          description: String(message),
+          variant: "destructive",
+        });
       }
     });
   };

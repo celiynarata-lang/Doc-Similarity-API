@@ -27,7 +27,7 @@ API backend berbayar untuk layanan pengecekan kemiripan/plagiarisme dokumen, men
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Payment: Midtrans Snap (`midtrans-client`)
-- AI: Anthropic API (claude-sonnet-4-5) dengan web_search tool
+- AI: Anthropic API (claude-sonnet-5) dengan web_search tool
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - Build: esbuild (ESM bundle)
 
@@ -71,4 +71,4 @@ _Populate as you build._
 - Pastikan run `pnpm --filter @workspace/api-server run dev` (bukan root-level `pnpm dev`)
 - Migration otomatis dijalankan saat startup, tidak perlu manual SQL
 - Midtrans notification endpoint harus bisa diakses dari internet (perlu public URL)
-- Model Anthropic di scan.ts: `claude-sonnet-4-5` (versi stabil; user minta `claude-sonnet-4-6` tapi model tersebut belum tersedia)
+- Model Anthropic di scan.ts: `claude-sonnet-5`
